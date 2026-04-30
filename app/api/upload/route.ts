@@ -79,15 +79,24 @@ export async function POST(request: Request) {
       pageCount,
     })
   } catch (err) {
-    if (err instanceof Error && err.message.includes('Could not extract text')) {
+    const message = err instanceof Error ? err.message : String(err)
+
+    if (message.includes('Could not extract text')) {
       return NextResponse.json(
-        { error: err.message, code: 'PDF_PARSE_ERROR' },
+        { error: message, code: 'PDF_PARSE_ERROR' },
         { status: 422 }
       )
     }
-    console.error('Upload error:', err)
+
+    console.error('[/api/upload]', message, err)
+
     return NextResponse.json(
-      { error: 'An unexpected error occurred. Please try again.', code: 'INTERNAL_ERROR' },
+      {
+        error: 'An unexpected error occurred. Please try again.',
+        code: 'INTERNAL_ERROR',
+        // Surface real error in dev so you can see it in the browser
+        ...(process.env.NODE_ENV === 'development' && { debug: message }),
+      },
       { status: 500 }
     )
   }

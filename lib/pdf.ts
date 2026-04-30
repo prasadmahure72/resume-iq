@@ -1,20 +1,55 @@
 import 'server-only'
-import { PDFParse } from 'pdf-parse'
+import path from 'path'
 
 interface ParsedPDF {
   text: string
   pageCount: number
 }
 
-export async function parsePDF(buffer: Buffer): Promise<ParsedPDF> {
-  const parser = new PDFParse({ data: buffer })
-  const result = await parser.getText()
-  await parser.destroy()
+function itemToString(item: unknown): string {
+  if (
+    typeof item === 'object' &&
+    item !== null &&
+    'str' in item &&
+    typeof (item as Record<string, unknown>).str === 'string'
+  ) {
+    return (item as { str: string }).str
+  }
+  return ''
+}
 
-  const text = result.text
-    .replace(/\r\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
+export async function parsePDF(buffer: Buffer): Promise<ParsedPDF> {
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+
+  // Resolve worker from project root — works in all Next.js server contexts
+  const workerPath = path.join(
+    process.cwd(),
+    'node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs'
+  )
+  pdfjs.GlobalWorkerOptions.workerSrc = `file://${workerPath}`
+
+  const pdf = await pdfjs
+    .getDocument({ data: new Uint8Array(buffer), useSystemFonts: true })
+    .promise
+
+  const numPages = pdf.numPages
+  const pageTexts: string[] = []
+
+  for (let i = 1; i <= numPages; i++) {
+    const page = await pdf.getPage(i)
+    const content = await page.getTextContent()
+    const pageText = content.items
+      .map(itemToString)
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+    pageTexts.push(pageText)
+    page.cleanup()
+  }
+
+  await pdf.destroy()
+
+  const text = pageTexts.join('\n\n').trim()
 
   if (!text || text.length < 50) {
     throw new Error(
@@ -22,8 +57,5 @@ export async function parsePDF(buffer: Buffer): Promise<ParsedPDF> {
     )
   }
 
-  return {
-    text,
-    pageCount: result.total,
-  }
+  return { text, pageCount: numPages }
 }
