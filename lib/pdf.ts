@@ -1,5 +1,4 @@
 import 'server-only'
-import path from 'path'
 
 interface ParsedPDF {
   text: string
@@ -21,12 +20,11 @@ function itemToString(item: unknown): string {
 export async function parsePDF(buffer: Buffer): Promise<ParsedPDF> {
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
 
-  // Resolve worker from project root — works in all Next.js server contexts
-  const workerPath = path.join(
-    process.cwd(),
-    'node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs'
-  )
-  pdfjs.GlobalWorkerOptions.workerSrc = `file://${workerPath}`
+  // In Node.js pdfjs uses a FakeWorker that does `await import(workerSrc)`.
+  // Use the bare package specifier so Node.js module resolution finds the file
+  // via node_modules — a file:// URL breaks on Vercel because process.cwd()
+  // doesn't point to the project root in the deployed function sandbox.
+  pdfjs.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/legacy/build/pdf.worker.mjs'
 
   const pdf = await pdfjs
     .getDocument({
