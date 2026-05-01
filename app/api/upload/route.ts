@@ -94,8 +94,7 @@ export async function POST(request: Request) {
       {
         error: 'An unexpected error occurred. Please try again.',
         code: 'INTERNAL_ERROR',
-        // Surface real error in dev so you can see it in the browser
-        ...(process.env.NODE_ENV === 'development' && { debug: message }),
+        debug: message,
       },
       { status: 500 }
     )

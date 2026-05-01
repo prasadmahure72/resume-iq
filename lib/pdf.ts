@@ -29,7 +29,12 @@ export async function parsePDF(buffer: Buffer): Promise<ParsedPDF> {
   pdfjs.GlobalWorkerOptions.workerSrc = `file://${workerPath}`
 
   const pdf = await pdfjs
-    .getDocument({ data: new Uint8Array(buffer), useSystemFonts: true })
+    .getDocument({
+      data: new Uint8Array(buffer),
+      useSystemFonts: true,
+      isEvalSupported: false,
+      disableFontFace: true,
+    })
     .promise
 
   const numPages = pdf.numPages
