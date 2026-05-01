@@ -20,11 +20,16 @@ function itemToString(item: unknown): string {
 export async function parsePDF(buffer: Buffer): Promise<ParsedPDF> {
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
 
-  // In Node.js pdfjs uses a FakeWorker that does `await import(workerSrc)`.
-  // Use the bare package specifier so Node.js module resolution finds the file
-  // via node_modules — a file:// URL breaks on Vercel because process.cwd()
-  // doesn't point to the project root in the deployed function sandbox.
-  pdfjs.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/legacy/build/pdf.worker.mjs'
+  // pdfjs Node.js FakeWorker calls `await import(workerSrc)` internally where
+  // workerSrc is a runtime string. That dynamic-variable import is unreliable
+  // in Vercel's Lambda sandbox. pdfjs checks `globalThis.pdfjsWorker` *first*
+  // and skips the dynamic import entirely when it's present — so we pre-load
+  // the worker module ourselves (a static import path the bundler can handle)
+  // and inject it before the first getDocument call.
+  if (!(globalThis as Record<string, unknown>).pdfjsWorker) {
+    const workerModule = await import('pdfjs-dist/legacy/build/pdf.worker.mjs')
+    ;(globalThis as Record<string, unknown>).pdfjsWorker = workerModule
+  }
 
   const pdf = await pdfjs
     .getDocument({
