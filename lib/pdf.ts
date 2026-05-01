@@ -27,6 +27,8 @@ export async function parsePDF(buffer: Buffer): Promise<ParsedPDF> {
   // the worker module ourselves (a static import path the bundler can handle)
   // and inject it before the first getDocument call.
   if (!(globalThis as Record<string, unknown>).pdfjsWorker) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore -- pdfjs-dist ships no types for this sub-path
     const workerModule = await import('pdfjs-dist/legacy/build/pdf.worker.mjs')
     ;(globalThis as Record<string, unknown>).pdfjsWorker = workerModule
   }
