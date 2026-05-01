@@ -75,7 +75,12 @@ export function Sidebar({ user }: { user: SidebarUser }) {
         <div className="pt-3 mt-3 border-t border-border">
           <Link
             href="/settings"
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-all duration-150"
+            className={cn(
+              'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150',
+              pathname.startsWith('/settings')
+                ? 'bg-accent/10 text-accent'
+                : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
+            )}
           >
             <Settings className="w-4 h-4 shrink-0" />
             Settings
@@ -105,6 +110,9 @@ export function Sidebar({ user }: { user: SidebarUser }) {
           <LogOut className="w-4 h-4 shrink-0" />
           Sign out
         </button>
+        <p className="text-[10px] text-text-muted px-3 pt-1">
+          © {new Date().getFullYear()} Developed by Prasad M
+        </p>
       </div>
     </aside>
   )

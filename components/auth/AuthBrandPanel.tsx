@@ -42,9 +42,8 @@ export function AuthBrandPanel() {
         </ul>
       </div>
 
-      {/* Social proof */}
       <p className="text-text-muted text-xs">
-        Trusted by engineers at Google, Stripe, Airbnb, and 500+ more.
+        © {new Date().getFullYear()} Developed by Prasad M
       </p>
     </div>
   )
